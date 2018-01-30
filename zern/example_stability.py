@@ -31,7 +31,7 @@ Z_naive = zern.ZernikeNaive(mask)
 # Zernike orders
 n_list = [40, 44, 48]
 m = 0
-n_max = 51
+n_max = 101
 
 # for n in n_list:
 #     # Compute the Radial Zernike R_nm
@@ -51,10 +51,11 @@ n_max = 51
 
 # Error matrix
 error = np.zeros((n_max, (n_max-1)//2))
+m_counter = np.zeros((n_max, (n_max-1)//2))
 for i in np.arange(2, n_max):  # n index loop
     j_start = zern.parity(i)    # Decide whether m starts at 0 or 1
     for j in np.arange(j_start, i+1, 2):    # m index loop
-        R_naive = Z_naive.R_nm(i, j, rho)
+        R_naive, k = Z_naive.R_nm(i, j, rho)
         R_jacobi = Z_naive.R_nm_Jacobi(i, j, rho)
 
         # As the Zernike layers are (n=0, m=0) (n=1, m=1) (n=2, m=0)
@@ -63,14 +64,23 @@ for i in np.arange(2, n_max):  # n index loop
         # positions
         j_new = (j-j_start)//2
         if i!=j:
+            m_counter[i, j_new] = k
             error[i, j_new] = np.log10(np.max(np.abs(R_naive - R_jacobi)))
 
 np.place(error, error==0., np.nan)
+np.place(m_counter, m_counter==0., np.nan)
+
 
 plt.figure()
 plt.imshow(error[::-1,:], aspect='0.5', origin='lower')
 plt.axis('off')
 plt.title('log_10(error) between Standard and Jacobi \n(n_max=%d)' %(n_max-1))
+plt.colorbar()
+
+plt.figure()
+plt.imshow(m_counter[::-1,:], aspect='0.5', origin='lower')
+plt.axis('off')
+plt.title('N')
 plt.colorbar()
 
 plt.show()

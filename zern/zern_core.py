@@ -80,7 +80,8 @@ class ZernikeNaive(object):
         r = np.zeros_like(rho)
 
         if (n - m) % 2 != 0:
-            return r
+            j = 0
+            return r, j
         else:
             for j in range(int((n - m) / 2) + 1):
                 coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact((n + m) / 2 - j) * fact((n - m) / 2 - j))
@@ -90,7 +91,7 @@ class ZernikeNaive(object):
     def R_nm_Jacobi(self, n, m, rho):
         """
         Computes the Radial Zernike polynomial of order 'n', 'm' R_nm
-        but this version uses a faster method.
+        but this version uses a method which is faster than the Naive R_nm.
 
         It exploits the relation between the Radial Zernike polynomial and Jacobi polynomials
             R_nm(rho) = (-1)^[(n-m)/2] * rho^|m| * J_{[(n-m)/2]}^{|m|, 0} (1 - 2*rho^2)
@@ -138,23 +139,78 @@ class ZernikeNaive(object):
 
             return J2
 
+    def R_nm_ChongKintner(self, n, m, rho):
+        """
+        Computes the Radial Zernike polynomial of order 'n', 'm' R_nm
+        This one uses a similar approach to the one implemented by R_nm_Jacobi.
+
+        This time, the Q-recursive method developed by Chong [1] is used in combination with
+        the modified Kintner's method to implement a direct recurrence on the Zernike R_nm.
+        The method and formulas are described in [2]
+
+        The main differences with respect to R_nm_Jacobi is that this method directly uses
+        the radial Zernike R_nm, and that its recurrence operates along the order 'm' (row-wise)
+        for a fixed 'n'. In contrast, R_nm_Jacobi operates along the order 'n' (column-wise)
+        for a fixed 'm'.
+
+        This method is not as competitive as the Jacobi because it relies on the evaluation of
+        R_{n,n} = rho ^ n   and    R_{n, n-2} = n rho^n - (n - 1) rho^(n-2)
+        which scales badly with 'n'
+        In contrast, Jacobi keeps the order of the polynomial to k = (n - m) / 2 which is much smaller
+
+        References:
+            [1] C.W. Chong, P. Raveendran, R. Mukundan. "A comparative analysis of algorithms for fast computation
+                of Zernike moments. Pattern Recognition 36 (2003) 731-742
+            [2] Sun-Kyoo Hwang, Whoi-Yul Kim "A novel approach to the fast computation of Zernike moments"
+                Pattern Recognition 39 (2006) 2065-2076
+        """
+        n, m = np.abs(n), np.abs(m)
+
+        if m == n:  # Right at the boundary
+            R_nm = rho ** n
+            return R_nm
+
+        if m == (n - 2):    # One before the boundary
+            R_nm = n * rho ** n - (n - 1) * rho ** (n - 2)
+            return R_nm
+
+        else:   # Interior polynomial
+            R_nn_4 = rho ** n # Compute the one at the boundary R_{n, n}
+            R_nn_2 = n * rho ** n - (n - 1) * rho ** (n - 2)    # R_{n, n-2}
+
+            mm = n - 4
+            while mm >= m:  # iterative along m
+                H3 = - 4 * (m + 2) * (m + 1) / ((n + m + 2) * (n - m))
+                H2 = H3 * (n + m + 4) * (n - m - 2) / (4*(m + 3)) + (m + 2)
+                H1 = (m + 4)* (m + 3)/2 - (m + 4) * H2 + H3 * (n + m + 6) * (n - m - 4) / 8
+
+                R_nn = H1 * R_nn_4 + (H2 + H3 / rho ** 2) * R_nn_2
+
+                R_nn_4 = R_nn_2
+                R_nn_2 = R_nn
+                mm -= 2
+            return R_nn
+
     def Z_nm(self, n, m, rho, theta, normalize_noll, mode):
         """
         Main function to evaluate a single Zernike polynomial of order 'n', 'm'
 
         You can choose whether to normalize the polynomilas depending on the order,
-        and which mode (Naive or Jacobi) to use.
+        and which mode (Naive, Jacobi or ChongKintner) to use.
 
         :param rho: radial coordinate (ideally it should come normalized to 1)
         :param theta: azimuth coordinate
         :param normalize_noll: True {Applies Noll coefficient}, False {Does nothing}
-        :param mode: whether to use 'Standard' (naive Zernike formula) or 'Jacobi' (recurrence)
+        :param mode: whether to use 'Standard' (naive Zernike formula),
+                'Jacobi' (Jacobi-based recurrence) or 'ChongKintner' (Zernike-based recurrence)
         """
 
         if mode == 'Standard':
             R = self.R_nm(n, m, rho)
         if mode == 'Jacobi':
             R = self.R_nm_Jacobi(n, m, rho)
+        if mode == 'ChongKintner':
+            R = self.R_nm_ChongKintner(n, m, rho)
 
         if m == 0:
             if n == 0:
@@ -224,11 +280,13 @@ class ZernikeNaive(object):
             self.coef = coef
 
         result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
+        #
+        # if mode == 'Standard':
+        #     print('\n Mode: Standard Zernike (naive)')
+        # if mode == 'Jacobi':
+        #     print('\n Mode: Jacobi (faster)')
 
-        if mode == 'Standard':
-            print('\n Mode: Standard Zernike (naive)')
-        if mode == 'Jacobi':
-            print('\n Mode: Jacobi (faster)')
+        print('\n Mode: ' + mode)
         print('Total time required to evaluate %d Zernike polynomials = %.3f sec' % (N_new, sum(self.times)))
         print('Average time per polynomials: %.3f ms' % (1e3 * np.average(self.times)))
         return result
@@ -250,7 +308,11 @@ class ZernikeSmart(object):
 
         Explanation of (2):
         Every Jacobi P_{k}^{alfa, beta} can be recovered by recurrence along its alfa column, based on
-        P_{0}^{alfa, beta} and P_{1}^{alfa, beta}. Beta is always 0 for Zernike so it doesn't play a role
+        P_{0}^{alfa, beta} and P_{1}^{alfa, beta}. Zernike and Jacobi polynomials are related such that:
+
+            k = (n-m)/2    alfa = |m|    beta = 0
+
+        Beta is always 0 for Zernike so it doesn't play a role
 
         By definition, P_{0}^{alfa, 0} = 1, no matter the alfa. So the first side-layer of the pyramid is always 1
         The second side-layer P_{1}^{alfa, 0} = 1/2 * [(alfa - beta=0) + (alfa + beta=0 + 2)x]
@@ -292,7 +354,8 @@ class ZernikeSmart(object):
         jacobi_polynomials = dict([('P00', np.ones_like(x))])
         for i in range(n_max + 1):
             # In principle this loop is unnecessary because the are all Ones
-            # You could just rely on the P00 key
+            # You could just rely on the P00 key, but the dictionary is only
+            # created once so it's not a big deal...
             new_key_P0 = 'P0%d' % i
             jacobi_polynomials[new_key_P0] = np.ones_like(x)
 
@@ -442,5 +505,33 @@ class ZernikeSmart(object):
         return result
 
 if __name__ == "__main__":
+
+    N = 1024
+    # N_zern = 100
+    rho_max = 1.0
+    mask = []
+
+    # Construct the coordinates
+    rho = np.linspace(0., rho_max, N)
+
+    Z_naive = ZernikeNaive(mask)
+
+    n, m = 7, 1
+    r0 = Z_naive.R_nm(n=n, m=n, rho=rho)
+    r1 = Z_naive.R_nm_ChongKintner(n=n, m=n, rho=rho)
+
+    plt.figure()
+    plt.plot(rho, r0, label='Normal')
+    plt.legend()
+
+    plt.figure()
+    plt.plot(rho, r1, label='ChongKintner')
+    plt.legend()
+
+
+
+    plt.show()
+
+
 
     pass

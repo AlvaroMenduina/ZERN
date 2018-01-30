@@ -21,7 +21,7 @@ import zern_core as zern
 
 # Parameters
 N = 1024
-N_zern = 100
+N_zern = 50
 rho_max = 1.0
 randgen = RandomState(12345)  # random seed
 
@@ -32,11 +32,11 @@ rho = np.sqrt(xx ** 2 + yy ** 2)
 theta = np.arctan2(xx, yy)
 aperture_mask = rho <= rho_max
 rho, theta = rho[aperture_mask], theta[aperture_mask]
-
-# Show the first few Zernike Polynomials
-coef = randgen.normal(size=10)      # Coefficients of the Zernike Series expansion
+#
+# # Show the first few Zernike Polynomials
+# coef = randgen.normal(size=10)      # Coefficients of the Zernike Series expansion
 z = zern.ZernikeNaive(mask=aperture_mask)
-z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_option='All')
+# z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_option='All')
 
 print('\n Comparing the speed of several methods')
 
@@ -46,20 +46,23 @@ z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_
 times_naive = z.times
 z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Jacobi', print_option=None)
 times_jacobi = z.times
+z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='ChongKintner', print_option=None)
+times_chong = z.times
 
-z_smart = zern.ZernikeSmart(mask=aperture_mask)
-z_series = z_smart(coef, rho, theta, normalize_noll=False, print_option=None)
-times_smart = z_smart.times
+# z_smart = zern.ZernikeSmart(mask=aperture_mask)
+# z_series = z_smart(coef, rho, theta, normalize_noll=False, print_option=None)
+# times_smart = z_smart.times
 
-plt.figure()
-plt.imshow(zern.invert_mask(z_series, aperture_mask), cmap='jet')
-plt.title("Zernike Series containing %d polynomials" % N_zern)
-plt.colorbar()
+# plt.figure()
+# plt.imshow(zern.invert_mask(z_series, aperture_mask), cmap='jet')
+# plt.title("Zernike Series containing %d polynomials" % N_zern)
+# plt.colorbar()
 
 plt.figure()
 plt.scatter(np.arange(len(times_naive)), times_naive, label='Standard', s=12)
 plt.scatter(np.arange(len(times_jacobi)), times_jacobi, label='Jacobi', s=12)
-plt.scatter(np.arange(len(times_smart)), times_smart, label='Smart Jacobi', s=12)
+plt.scatter(np.arange(len(times_chong)), times_chong, label='Chong', s=12)
+# plt.scatter(np.arange(len(times_smart)), times_smart, label='Smart Jacobi', s=12)
 plt.legend()
 plt.xlim([0, len(times_naive)])
 plt.ylim([0, max(times_naive)])
@@ -70,12 +73,14 @@ plt.title('Time spent in each polynomial')
 # Get the trends: total_time vs number polynomials
 avg_naive = [np.sum(times_naive[:(i+1)]) for i in range(len(times_naive))]
 avg_jacobi = [np.sum(times_jacobi[:(i+1)]) for i in range(len(times_jacobi))]
-avg_smart = [np.sum(times_smart[:(i+1)]) for i in range(len(times_smart))]
+avg_chong = [np.sum(times_chong[:(i+1)]) for i in range(len(times_chong))]
+# avg_smart = [np.sum(times_smart[:(i+1)]) for i in range(len(times_smart))]
 
 plt.figure()
 plt.plot(np.arange(len(avg_naive)), avg_naive, label='Standard')
 plt.plot(np.arange(len(avg_jacobi)), avg_jacobi, label='Jacobi')
-plt.plot(np.arange(len(avg_smart)), avg_smart, label='Smart Jacobi')
+plt.plot(np.arange(len(avg_chong)), avg_chong, label='Chong')
+# plt.plot(np.arange(len(avg_smart)), avg_smart, label='Smart Jacobi')
 plt.legend()
 plt.xlim([0, len(times_naive)])
 plt.ylim([0, max(avg_naive)])
