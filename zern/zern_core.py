@@ -506,32 +506,4 @@ class ZernikeSmart(object):
 
 if __name__ == "__main__":
 
-    N = 1024
-    # N_zern = 100
-    rho_max = 1.0
-    mask = []
-
-    # Construct the coordinates
-    rho = np.linspace(0., rho_max, N)
-
-    Z_naive = ZernikeNaive(mask)
-
-    n, m = 7, 1
-    r0 = Z_naive.R_nm(n=n, m=n, rho=rho)
-    r1 = Z_naive.R_nm_ChongKintner(n=n, m=n, rho=rho)
-
-    plt.figure()
-    plt.plot(rho, r0, label='Normal')
-    plt.legend()
-
-    plt.figure()
-    plt.plot(rho, r1, label='ChongKintner')
-    plt.legend()
-
-
-
-    plt.show()
-
-
-
     pass
