@@ -41,6 +41,17 @@ def invert_mask(x, mask):
     result[i,j] = x
     return result
 
+def rescale_phase_map(phase_map, peak=1):
+    """
+    Rescales a given phase map (Zernike expansion) by shifting it to (max - min)/2
+    and limiting its peak_to_valley so that max(new_map) = peak
+    and min(new_map) = - peak
+    """
+    new_origin = (phase_map.max() + phase_map.min())/2
+    zero_mean_map = phase_map - new_origin
+    rescaled_map = (peak) * zero_mean_map / np.max(zero_mean_map)
+    return rescaled_map
+
 def get_limit_index(N):
     """
     Computes the 'n' Zernike index required to generate a
