@@ -23,6 +23,9 @@ from numpy.random import RandomState
 from math import factorial as fact
 import matplotlib.pyplot as plt
 from time import time as tm
+from scipy.optimize import least_squares
+
+counter = 0
 
 def parity(n):
     """ Returns 0 if n is even and 1 if n is odd """
@@ -64,6 +67,11 @@ def get_limit_index(N):
     n = int(np.ceil(0.5 * (np.sqrt(1 + 8*N) - 3)))
     return n
 
+def least_squares_zernike(coef_guess, zern_data, zern_model):
+    zern_guess = np.dot(zern_model.model_matrix, coef_guess)
+    residuals = zern_data - zern_guess
+    return residuals
+
 class ZernikeNaive(object):
     def __init__(self, mask):
         """
@@ -91,8 +99,7 @@ class ZernikeNaive(object):
         r = np.zeros_like(rho)
 
         if (n - m) % 2 != 0:
-            j = 0
-            return r, j
+            return r
         else:
             for j in range(int((n - m) / 2) + 1):
                 coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact((n + m) / 2 - j) * fact((n - m) / 2 - j))
@@ -257,6 +264,14 @@ class ZernikeNaive(object):
                 start = tm()
                 Z = self.Z_nm(n, m, rho, theta, normalize_noll, mode)
                 self.times.append((tm() - start))
+
+                # Fill the column of the Model matrix H
+                # Important! The model matrix contains all the polynomials of the
+                # series, so one can use it to recompute a new series with different
+                # coefficients, without redoing all the calculation!
+                self.model_matrix[:, zern_counter] = Z
+
+
                 Z_series += self.coef[zern_counter] * Z
                 zern_counter += 1
 
@@ -290,16 +305,19 @@ class ZernikeNaive(object):
         elif N_new == self.N_zern:
             self.coef = coef
 
-        result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
-        #
-        # if mode == 'Standard':
-        #     print('\n Mode: Standard Zernike (naive)')
-        # if mode == 'Jacobi':
-        #     print('\n Mode: Jacobi (faster)')
+        # Check whether the Model matrix H was already created
+        # Observations Z(rho, theta) = H(rho, theta) * zern_coef
+        try:
+            H = self.model_matrix
+        except AttributeError:
+            self.model_matrix = np.empty((rho.shape[0], N_new))
 
-        print('\n Mode: ' + mode)
-        print('Total time required to evaluate %d Zernike polynomials = %.3f sec' % (N_new, sum(self.times)))
-        print('Average time per polynomials: %.3f ms' % (1e3 * np.average(self.times)))
+        result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
+
+        if print_option != 'Silent':
+            print('\n Mode: ' + mode)
+            print('Total time required to evaluate %d Zernike polynomials = %.3f sec' % (N_new, sum(self.times)))
+            print('Average time per polynomials: %.3f ms' % (1e3 * np.average(self.times)))
         return result
 
 class ZernikeSmart(object):
@@ -424,6 +442,14 @@ class ZernikeSmart(object):
             return J2
 
     def fill_in_dictionary(self, rho, theta, normalize_noll=False, print_option=None):
+        """
+        Takes the dictionary containing the Jacobi Polynomials needed to start the
+        recurrence and updates the dictionary with the newly computed polynomials
+
+        At the same time, it translates the Jacobi polynomials into Zernike polynomials
+        and adds them into a Zernike series
+        """
+
         # Transform rho to Jacobi coordinate x = 1 - 2 * rho**2
         x = 1. - 2 * rho ** 2
 
