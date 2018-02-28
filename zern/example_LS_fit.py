@@ -9,6 +9,7 @@ from numpy.random import RandomState
 import matplotlib.pyplot as plt
 from scipy.optimize import least_squares
 import zern_core as zern
+from time import time
 
 # Parameters
 N = 1024
@@ -88,6 +89,7 @@ plt.title("Guessed map (Least Squares fit)")
 plt.xlabel('x')
 plt.ylabel('y')
 plt.colorbar()
+
 
 plt.show()
 

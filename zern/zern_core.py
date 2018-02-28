@@ -19,11 +19,10 @@ Zernike polynomials which can be summarised as follows
 """
 
 import numpy as np
-from numpy.random import RandomState
 from math import factorial as fact
 import matplotlib.pyplot as plt
 from time import time as tm
-from scipy.optimize import least_squares
+from numba import jit
 
 counter = 0
 
@@ -43,6 +42,19 @@ def invert_mask(x, mask):
     result = np.zeros((N, N))
     result[i,j] = x
     return result
+
+def invert_model_matrix(H, mask):
+    """
+    Take the Zern Model Matrix H (whichs has the M(Nx*Ny and flattened) * N_Zern shape
+    and restructure it back to a Nx * Ny * N_zern tensor
+    """
+    N, N_zern = mask.shape[0], H.shape[1]
+    new_H = np.zeros((N, N, N_zern))
+    for k in range(N_zern):
+        zern = H[:, k]
+        zern2D = invert_mask(zern, mask)
+        new_H[:,:,k] = zern2D
+    return new_H
 
 def rescale_phase_map(phase_map, peak=1):
     """
@@ -68,6 +80,19 @@ def get_limit_index(N):
     return n
 
 def least_squares_zernike(coef_guess, zern_data, zern_model):
+    """
+    Computes the residuals (in the least square sense) between a given
+    Zernike phase map (zern_data) and a guess (zern_guess) following the model:
+        observations = model * parameters + noise
+        zern_data ~= zern_model.model_matrix * coef_guess
+
+    This function can be passed to scipy.optimize.least_squares
+
+    :param coef_guess: an initial guess to start the fit.
+    In scipy.optimize.least_squares this is your 'x'
+    :param zern_data: a given surface map which you want to fit to Zernikes
+    :param zern_model: basically a ZernikeNaive object
+    """
     zern_guess = np.dot(zern_model.model_matrix, coef_guess)
     residuals = zern_data - zern_guess
     return residuals
