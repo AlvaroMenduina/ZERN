@@ -9,7 +9,6 @@ Example to show how each of the methods in ZERN perform in terms of Numerical St
 
     (2) ZernikeNaive(method='Jacobi')
 
-
     (3) ZernikeSmart (based on Jacobi) brings slightly better performance than the previous one
 """
 
@@ -69,8 +68,10 @@ np.place(error, error==0., np.nan)
 
 
 plt.figure()
-plt.imshow(error[::-1,:], aspect='0.5', origin='lower')
-plt.axis('off')
+plt.imshow(error, aspect='0.5', origin='upper')
+# plt.axis('off')
+plt.xlabel('M')
+plt.ylabel('N')
 plt.title('log_10(error) between Standard and Jacobi \n(n_max=%d)' %(n_max-1))
 plt.colorbar()
 

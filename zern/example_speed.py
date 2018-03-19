@@ -11,7 +11,9 @@ Example to show how each of the methods in ZERN perform in terms of speed
     (2) ZernikeNaive(method='Jacobi') is much more competitive. The cost per polynomial barely
         increases with order (n, m)
 
-    (3) ZernikeSmart (based on Jacobi) brings slightly better performance than the previous one
+    (3) ZernikeNaive(method='ChongKintner') is faster than the Standard, but not as good as Jacobi
+
+    (4) ZernikeSmart (based on Jacobi) brings slightly better performance than the previous one
 """
 
 import numpy as np

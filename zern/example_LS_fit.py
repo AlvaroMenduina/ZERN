@@ -2,7 +2,12 @@
 #-                    Least Squares fit                    -#
 ## ------------------------------------------------------- ##
 
+"""
 
+Illustrate the use of a Least Squares fit to retrieve the Zernike polynomials from a
+noisy map using the Model matrix
+
+"""
 
 import numpy as np
 from numpy.random import RandomState
@@ -59,7 +64,7 @@ plt.ylabel('y')
 plt.colorbar()
 
 # The Model Matrix contains the Zernike polynomials ordered column-wise
-# Very convinient when you need to recalculate series, like when you do
+# Very convenient when you need to recalculate series, like when you do
 # some iterative fitting
 # for i in range(5):
 #     plt.figure()
