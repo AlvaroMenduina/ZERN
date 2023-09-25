@@ -115,6 +115,13 @@ class ZernikeNaive(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(log_level)
 
+        # Create a handler and set the level accordingly - this is for printing out
+        handler = logging.StreamHandler()
+        handler.setLevel(log_level)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)     # Attach the handler to the logger
+
         self.logger.info("Creating ZernikeNaive instance")
 
     def R_nm(self, n, m, rho):
@@ -324,22 +331,42 @@ class ZernikeNaive(object):
             plt.colorbar()
 
         return Z_series
+    
+    def get_zernike(self, coef):
+        """
+        Fast calculation
+        TODO: implement a quick method that just does the dot(H, coef)
+        """
+
+        # try:
+        #     H = self.model_matrix
+        #     result = np.dot(H)
+        # except AttributeError:
+        #     # self.__call__
+        #     pass
+        return
 
     def __call__(self, coef, rho, theta, normalize_noll=False, mode='Standard', print_option=None):
+
+        self.logger.debug(f"Calculating the Zernike polynomials for a set coefficients of shape N={coef.shape[0]}")
         
         # Compute the limit radial index 'n' needed to have at least N_zern, and pad zeroes
         self.N_zern = coef.shape[0]
         self.n = get_limit_index(self.N_zern)
         N_new = int((self.n + 1) * (self.n + 2) / 2)    # Total amount of Zernikes
+        self.logger.debug(f"Going up to Radial Order n={self.n} | Total: {N_new} Zernike polynomials")
         if N_new > self.N_zern:  # We will compute more than we need
             self.coef = np.pad(coef, (0, N_new - self.N_zern), 'constant')  # Pad to match size
+            self.logger.debug(f"Zero-padding the rest of the coefficients array")
         elif N_new == self.N_zern:
             self.coef = coef
+            self.logger.debug(f"Shape of the coefficients array is the same as total {N_new} of polynomials. No changes")
 
         # Check whether the Model matrix H was already created
         # Observations Z(rho, theta) = H(rho, theta) * zern_coef
         try:
             H = self.model_matrix
+            self.logger.debug(f"Checking if the model matrix H already exists? YES")
         except AttributeError:
             self.model_matrix = np.empty((rho.shape[0], N_new))
 

@@ -19,6 +19,7 @@ import zern.zern_core as zern
 import numpy as np
 from numpy.random import RandomState
 import matplotlib.pyplot as plt
+import logging
 
 plt.rc('font', family='sans-serif')
 
@@ -27,6 +28,7 @@ N = 1024
 N_zern = 50
 rho_max = 1.0
 randgen = RandomState(12345)  # random seed
+
 
 if __name__ == """__main__""":
 
@@ -39,11 +41,16 @@ if __name__ == """__main__""":
     rho, theta = rho[aperture_mask], theta[aperture_mask]
 
     # [1] Create an instance of the ZernikeNaive class
-    z = zern.ZernikeNaive(mask=aperture_mask)
+    z = zern.ZernikeNaive(mask=aperture_mask, log_level=logging.DEBUG)
     coef = randgen.normal(size=10)      # Coefficients of the Zernike Series expansion
     result = z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_option='All')
+    print(result.shape)
+    result_2d = zern.invert_mask(result, z.mask)
+    plt.figure()
+    plt.imshow(result_2d)
+    plt.show()
     # Show the first few Zernike Polynomials
-    raise ValueError
+    # raise ValueError
 
     print('\n Comparing the speed of several methods')
 
@@ -59,6 +66,7 @@ if __name__ == """__main__""":
     z_smart = zern.ZernikeSmart(mask=aperture_mask)
     z_series = z_smart(coef, rho, theta, normalize_noll=False, print_option=None)
     times_smart = z_smart.times
+    raise ValueError
 
     # plt.figure()
     # plt.imshow(zern.invert_mask(z_series, aperture_mask), cmap='jet')
