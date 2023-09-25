@@ -96,7 +96,7 @@ def least_squares_zernike(coef_guess, zern_data, zern_model):
     return residuals
 
 class ZernikeNaive(object):
-    def __init__(self, mask):
+    def __init__(self, mask, log_level):
         """
         Object which computes a Series expansion of Zernike polynomials.
         It is based on true different methods:
@@ -112,6 +112,8 @@ class ZernikeNaive(object):
         and several optimizations can be made, which are exploited in ZernikeSmart (below)
         """
         self.mask = mask
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(log_level)
 
     def R_nm(self, n, m, rho):
         """
