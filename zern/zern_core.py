@@ -18,14 +18,11 @@ Zernike polynomials which can be summarised as follows
         re-using previously computed polynomials. Even faster than normal Jacobi
 """
 
-
+import logging
 import numpy as np
 from math import factorial as fact
 import matplotlib.pyplot as plt
 from time import time as tm
-from numba import jit
-
-counter = 0
 
 def parity(n):
     """ Returns 0 if n is even and 1 if n is odd """
@@ -128,7 +125,11 @@ class ZernikeNaive(object):
             return r
         else:
             for j in range(int((n - m) / 2) + 1):
-                coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact((n + m) / 2 - j) * fact((n - m) / 2 - j))
+                # print(f"J = {j} | n={n}, m={m}, f={(n + m) / 2 - j}")
+                F = int((n + m) / 2 - j)
+                G = int((n - m) / 2 - j)
+                coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact(F) * fact(G))
+                # coef = 1.0
                 r += coef * rho ** (n - 2 * j)
             return r
 
@@ -297,7 +298,6 @@ class ZernikeNaive(object):
                 # coefficients, without redoing all the calculation!
                 self.model_matrix[:, zern_counter] = Z
 
-
                 Z_series += self.coef[zern_counter] * Z
                 zern_counter += 1
 
@@ -322,8 +322,9 @@ class ZernikeNaive(object):
         return Z_series
 
     def __call__(self, coef, rho, theta, normalize_noll=False, mode='Standard', print_option=None):
+        
+        # Compute the limit radial index 'n' needed to have at least N_zern, and pad zeroes
         self.N_zern = coef.shape[0]
-        # Compute the radial index 'n' needed to have at least N_zern
         self.n = get_limit_index(self.N_zern)
         N_new = int((self.n + 1) * (self.n + 2) / 2)    # Total amount of Zernikes
         if N_new > self.N_zern:  # We will compute more than we need
@@ -344,6 +345,7 @@ class ZernikeNaive(object):
             print('\n Mode: ' + mode)
             print('Total time required to evaluate %d Zernike polynomials = %.3f sec' % (N_new, sum(self.times)))
             print('Average time per polynomials: %.3f ms' % (1e3 * np.average(self.times)))
+
         return result
 
 class ZernikeSmart(object):

@@ -8,6 +8,10 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Load dependencies from requirements.txt
+with open(path.join(here, 'requirements.txt'), 'r') as f:
+    install_requires = f.read().splitlines()
+
 setup(
     name='ZERN',
     version='0.9.1',
@@ -17,9 +21,5 @@ setup(
     author_email='alvaro.menduinafernandez@gmailcom',
     classifiers=['Development Status :: 3 - Alpha'],
     packages=find_packages(),
-    install_requires=[
-        'numpy>=1.0',
-        'matplotlib'  # Specify the desired numpy version or remove for any version
-        # Add other dependencies as needed
-    ]
+    install_requires=install_requires
 )

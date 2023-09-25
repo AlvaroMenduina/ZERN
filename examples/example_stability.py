@@ -12,9 +12,11 @@ Example to show how each of the methods in ZERN perform in terms of Numerical St
     (3) ZernikeSmart (based on Jacobi) brings slightly better performance than the previous one
 """
 
+import zern.zern_core as zern
 import numpy as np
 import matplotlib.pyplot as plt
-import zern_core as zern
+
+plt.rc('font', family='sans-serif')
 
 # Parameters
 N = 1024
@@ -61,8 +63,17 @@ for i in np.arange(2, n_max):  # n index loop
         # so we shift the columns depending on the parity to use those
         # positions
         j_new = (j-j_start)//2
-        if i!=j:
-            error[i, j_new] = np.log10(np.max(np.abs(R_naive - R_jacobi)))
+        if i != j :
+            err = np.abs(R_naive - R_jacobi)
+            print(np.max(err))
+
+            if np.max(err) > 0.5:
+                fig, ax = plt.subplots(1, 1)
+                ax.scatter(rho, R_naive, s=2, c='r')
+                ax.plot(rho, R_jacobi)
+                plt.show()
+
+            error[i, j_new] = np.log10(np.max(err))
 
 np.place(error, error==0., np.nan)
 

@@ -15,11 +15,10 @@ Example to show how each of the methods in ZERN perform in terms of speed
 
     (4) ZernikeSmart (based on Jacobi) brings slightly better performance than the previous one
 """
-
+import zern.zern_core as zern
 import numpy as np
 from numpy.random import RandomState
 import matplotlib.pyplot as plt
-import zern_core as zern
 
 # Parameters
 N = 1024

@@ -23,7 +23,7 @@ import numpy as np
 from math import factorial as fact
 import matplotlib.pyplot as plt
 from time import time as tm
-from numba import jit
+# from numba import jit
 
 counter = 0
 
@@ -128,7 +128,11 @@ class ZernikeNaive(object):
             return r
         else:
             for j in range(int((n - m) / 2) + 1):
-                coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact((n + m) / 2 - j) * fact((n - m) / 2 - j))
+                # print(f"J = {j} | n={n}, m={m}, f={(n + m) / 2 - j}")
+                F = int((n + m) / 2 - j)
+                G = int((n - m) / 2 - j)
+                coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact(F) * fact(G))
+                # coef = 1.0
                 r += coef * rho ** (n - 2 * j)
             return r
 
