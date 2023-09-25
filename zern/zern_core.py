@@ -115,6 +115,8 @@ class ZernikeNaive(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(log_level)
 
+        self.logger.info("Creating ZernikeNaive instance")
+
     def R_nm(self, n, m, rho):
         """
         Computes the Radial Zernike polynomial of order 'n', 'm'
