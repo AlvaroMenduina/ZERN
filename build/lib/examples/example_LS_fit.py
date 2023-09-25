@@ -8,12 +8,14 @@ Illustrate the use of a Least Squares fit to retrieve the Zernike polynomials fr
 noisy map using the Model matrix
 
 """
+import zern.zern_core as zern
+# from zern import zern_core as zern
 
 import numpy as np
 from numpy.random import RandomState
 import matplotlib.pyplot as plt
 from scipy.optimize import least_squares
-import zern_core as zern
+# import zern_core as zern
 from time import time
 
 # Parameters

@@ -10,11 +10,16 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='ZERN',
-    version='0.9.0',
+    version='0.9.1',
     description='Fast computation of Zernike polynomials',
     long_description=long_description,
     url='https://github.com/AlvaroMenduina/ZERN',
-    author_email='alvaro.menduinafernandez@physics.ox.ac.uk',
+    author_email='alvaro.menduinafernandez@gmailcom',
     classifiers=['Development Status :: 3 - Alpha'],
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=[
+        'numpy>=1.0',
+        'matplotlib'  # Specify the desired numpy version or remove for any version
+        # Add other dependencies as needed
+    ]
 )
