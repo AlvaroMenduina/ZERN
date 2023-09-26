@@ -86,6 +86,7 @@ if __name__ == """__main__""":
     avg_chong = [np.sum(times_chong[:(i+1)]) for i in range(len(times_chong))]
     # avg_smart = [np.sum(times_smart[:(i+1)]) for i in range(len(times_smart))]
 
+
     plt.figure()
     plt.plot(np.arange(len(avg_naive)), avg_naive, label='Standard')
     plt.plot(np.arange(len(avg_jacobi)), avg_jacobi, label='Jacobi')
