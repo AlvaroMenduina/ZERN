@@ -40,10 +40,9 @@ if __name__ == """__main__""":
 
     # [1] Create an instance of the ZernikeNaive class
     z = zern.ZernikeNaive(mask=aperture_mask)
-    coef = randgen.normal(size=10)      # Coefficients of the Zernike Series expansion
-    result = z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_option='All')
+    # coef = randgen.normal(size=10)      # Coefficients of the Zernike Series expansion
+    # z(coef=coef, rho=rho, theta=theta, normalize_noll=False, mode='Standard', print_option='All')
     # Show the first few Zernike Polynomials
-    raise ValueError
 
     print('\n Comparing the speed of several methods')
 
