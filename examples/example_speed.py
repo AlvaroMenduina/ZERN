@@ -19,6 +19,7 @@ import zern.zern_core as zern
 import numpy as np
 from numpy.random import RandomState
 import matplotlib.pyplot as plt
+import logging
 
 plt.rc('font', family='sans-serif')
 
@@ -27,6 +28,7 @@ N = 1024
 N_zern = 50
 rho_max = 1.0
 randgen = RandomState(12345)  # random seed
+
 
 if __name__ == """__main__""":
 

@@ -89,14 +89,14 @@ def least_squares_zernike(coef_guess, zern_data, zern_model):
     :param coef_guess: an initial guess to start the fit.
     In scipy.optimize.least_squares this is your 'x'
     :param zern_data: a given surface map which you want to fit to Zernikes
-    :param zern_model: basically a ZernikeNaive object
+    :param zern_model: basically a Zernike object
     """
     zern_guess = np.dot(zern_model.model_matrix, coef_guess)
     residuals = zern_data - zern_guess
     return residuals
 
-class ZernikeNaive(object):
-    def __init__(self, mask):
+class Zernike(object):
+    def __init__(self, mask, log_level):
         """
         Object which computes a Series expansion of Zernike polynomials.
         It is based on true different methods:
@@ -112,6 +112,17 @@ class ZernikeNaive(object):
         and several optimizations can be made, which are exploited in ZernikeSmart (below)
         """
         self.mask = mask
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(log_level)
+
+        # Create a handler and set the level accordingly - this is for printing out
+        handler = logging.StreamHandler()
+        handler.setLevel(log_level)
+        formatter = logging.Formatter('%(levelname)s: %(message)s')
+        handler.setFormatter(formatter)
+        self.logger.addHandler(handler)     # Attach the handler to the logger
+
+        self.logger.info("Creating Zernike instance")
 
     def R_nm(self, n, m, rho):
         """
@@ -225,6 +236,7 @@ class ZernikeNaive(object):
 
             mm = n - 4
             while mm >= m:  # iterative along m
+                # [NOTE]: this recursion is wrong!
                 H3 = - 4 * (m + 2) * (m + 1) / ((n + m + 2) * (n - m))
                 H2 = H3 * (n + m + 4) * (n - m - 2) / (4*(m + 3)) + (m + 2)
                 H1 = (m + 4)* (m + 3)/2 - (m + 4) * H2 + H3 * (n + m + 6) * (n - m - 4) / 8
@@ -296,7 +308,7 @@ class ZernikeNaive(object):
                 # Important! The model matrix contains all the polynomials of the
                 # series, so one can use it to recompute a new series with different
                 # coefficients, without redoing all the calculation!
-                self.model_matrix[:, zern_counter] = Z
+                self.model_matrix_flat[:, zern_counter] = Z
 
                 Z_series += self.coef[zern_counter] * Z
                 zern_counter += 1
@@ -320,24 +332,49 @@ class ZernikeNaive(object):
             plt.colorbar()
 
         return Z_series
+    
+    def get_zernike(self, coef):
+        """
+        Fast calculation
+        TODO: implement a quick method that just does the dot(H, coef)
+        """
+
+        # [0] See if the model matrix exists
+        try:
+            Hf = self.model_matrix_flat
+        except AttributeError("Model matrix does not yet exist, please run Zernike.__call__() first"):
+            # Throw an error if the model matrix does not exist yet
+            pass
+
+        result_flat = np.dot(self.model_matrix_flat[:, :self.N_zern], coef)
+        result = invert_mask(result_flat, self.mask)
+
+        return result
+
 
     def __call__(self, coef, rho, theta, normalize_noll=False, mode='Standard', print_option=None):
+
+        self.logger.debug(f"Calculating the Zernike polynomials for a set coefficients of shape N={coef.shape[0]}")
         
         # Compute the limit radial index 'n' needed to have at least N_zern, and pad zeroes
         self.N_zern = coef.shape[0]
         self.n = get_limit_index(self.N_zern)
         N_new = int((self.n + 1) * (self.n + 2) / 2)    # Total amount of Zernikes
+        self.logger.debug(f"Going up to Radial Order n={self.n} | Total: {N_new} Zernike polynomials")
         if N_new > self.N_zern:  # We will compute more than we need
             self.coef = np.pad(coef, (0, N_new - self.N_zern), 'constant')  # Pad to match size
+            self.logger.debug(f"Zero-padding the rest of the coefficients array")
         elif N_new == self.N_zern:
             self.coef = coef
+            self.logger.debug(f"Shape of the coefficients array is the same as total {N_new} of polynomials. No changes")
 
         # Check whether the Model matrix H was already created
         # Observations Z(rho, theta) = H(rho, theta) * zern_coef
         try:
-            H = self.model_matrix
+            H = self.model_matrix_flat
+            self.logger.debug(f"Checking if the model matrix H already exists? YES")
         except AttributeError:
-            self.model_matrix = np.empty((rho.shape[0], N_new))
+            self.model_matrix_flat = np.empty((rho.shape[0], N_new))
 
         result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
 
@@ -352,7 +389,7 @@ class ZernikeSmart(object):
 
     def __init__(self, mask):
         """
-        Improved version of ZernikeNaive, completely based on Jacobi polynomials
+        Improved version of Zernike, completely based on Jacobi polynomials
         but more sophisticaded to gain further speed advantage
 
         Advantages:
@@ -506,6 +543,7 @@ class ZernikeSmart(object):
                     Z = norm_coeff * R
                     end = tm()
                     self.times.append((end - start))
+                    print('n=%d, m=%d' % (n, m))
                     Z_series += self.coef[zern_counter] * Z
                     zern_counter += 1
                     if print_option == 'All':
