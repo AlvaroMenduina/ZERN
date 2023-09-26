@@ -66,7 +66,6 @@ if __name__ == """__main__""":
     z_smart = zern.ZernikeSmart(mask=aperture_mask)
     z_series = z_smart(coef, rho, theta, normalize_noll=False, print_option=None)
     times_smart = z_smart.times
-    raise ValueError
 
     # plt.figure()
     # plt.imshow(zern.invert_mask(z_series, aperture_mask), cmap='jet')

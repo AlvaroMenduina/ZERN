@@ -89,13 +89,13 @@ def least_squares_zernike(coef_guess, zern_data, zern_model):
     :param coef_guess: an initial guess to start the fit.
     In scipy.optimize.least_squares this is your 'x'
     :param zern_data: a given surface map which you want to fit to Zernikes
-    :param zern_model: basically a ZernikeNaive object
+    :param zern_model: basically a Zernike object
     """
     zern_guess = np.dot(zern_model.model_matrix, coef_guess)
     residuals = zern_data - zern_guess
     return residuals
 
-class ZernikeNaive(object):
+class Zernike(object):
     def __init__(self, mask, log_level):
         """
         Object which computes a Series expansion of Zernike polynomials.
@@ -122,7 +122,7 @@ class ZernikeNaive(object):
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)     # Attach the handler to the logger
 
-        self.logger.info("Creating ZernikeNaive instance")
+        self.logger.info("Creating Zernike instance")
 
     def R_nm(self, n, m, rho):
         """
@@ -236,6 +236,7 @@ class ZernikeNaive(object):
 
             mm = n - 4
             while mm >= m:  # iterative along m
+                # [NOTE]: this recursion is wrong!
                 H3 = - 4 * (m + 2) * (m + 1) / ((n + m + 2) * (n - m))
                 H2 = H3 * (n + m + 4) * (n - m - 2) / (4*(m + 3)) + (m + 2)
                 H1 = (m + 4)* (m + 3)/2 - (m + 4) * H2 + H3 * (n + m + 6) * (n - m - 4) / 8
@@ -307,7 +308,7 @@ class ZernikeNaive(object):
                 # Important! The model matrix contains all the polynomials of the
                 # series, so one can use it to recompute a new series with different
                 # coefficients, without redoing all the calculation!
-                self.model_matrix[:, zern_counter] = Z
+                self.model_matrix_flat[:, zern_counter] = Z
 
                 Z_series += self.coef[zern_counter] * Z
                 zern_counter += 1
@@ -338,13 +339,18 @@ class ZernikeNaive(object):
         TODO: implement a quick method that just does the dot(H, coef)
         """
 
-        # try:
-        #     H = self.model_matrix
-        #     result = np.dot(H)
-        # except AttributeError:
-        #     # self.__call__
-        #     pass
-        return
+        # [0] See if the model matrix exists
+        try:
+            Hf = self.model_matrix_flat
+        except AttributeError("Model matrix does not yet exist, please run Zernike.__call__() first"):
+            # Throw an error if the model matrix does not exist yet
+            pass
+
+        result_flat = np.dot(self.model_matrix_flat[:, :self.N_zern], coef)
+        result = invert_mask(result_flat, self.mask)
+
+        return result
+
 
     def __call__(self, coef, rho, theta, normalize_noll=False, mode='Standard', print_option=None):
 
@@ -365,10 +371,10 @@ class ZernikeNaive(object):
         # Check whether the Model matrix H was already created
         # Observations Z(rho, theta) = H(rho, theta) * zern_coef
         try:
-            H = self.model_matrix
+            H = self.model_matrix_flat
             self.logger.debug(f"Checking if the model matrix H already exists? YES")
         except AttributeError:
-            self.model_matrix = np.empty((rho.shape[0], N_new))
+            self.model_matrix_flat = np.empty((rho.shape[0], N_new))
 
         result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
 
@@ -383,7 +389,7 @@ class ZernikeSmart(object):
 
     def __init__(self, mask):
         """
-        Improved version of ZernikeNaive, completely based on Jacobi polynomials
+        Improved version of Zernike, completely based on Jacobi polynomials
         but more sophisticaded to gain further speed advantage
 
         Advantages:
@@ -537,6 +543,7 @@ class ZernikeSmart(object):
                     Z = norm_coeff * R
                     end = tm()
                     self.times.append((end - start))
+                    print('n=%d, m=%d' % (n, m))
                     Z_series += self.coef[zern_counter] * Z
                     zern_counter += 1
                     if print_option == 'All':
