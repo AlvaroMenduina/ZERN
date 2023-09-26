@@ -18,7 +18,6 @@ Zernike polynomials which can be summarised as follows
         re-using previously computed polynomials. Even faster than normal Jacobi
 """
 
-import logging
 import numpy as np
 from math import factorial as fact
 import matplotlib.pyplot as plt
@@ -91,12 +90,12 @@ def least_squares_zernike(coef_guess, zern_data, zern_model):
     :param zern_data: a given surface map which you want to fit to Zernikes
     :param zern_model: basically a Zernike object
     """
-    zern_guess = np.dot(zern_model.model_matrix, coef_guess)
+    zern_guess = np.dot(zern_model.model_matrix_flat, coef_guess)
     residuals = zern_data - zern_guess
     return residuals
 
 class Zernike(object):
-    def __init__(self, mask, log_level):
+    def __init__(self, mask):
         """
         Object which computes a Series expansion of Zernike polynomials.
         It is based on true different methods:
@@ -112,17 +111,6 @@ class Zernike(object):
         and several optimizations can be made, which are exploited in ZernikeSmart (below)
         """
         self.mask = mask
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(log_level)
-
-        # Create a handler and set the level accordingly - this is for printing out
-        handler = logging.StreamHandler()
-        handler.setLevel(log_level)
-        formatter = logging.Formatter('%(levelname)s: %(message)s')
-        handler.setFormatter(formatter)
-        self.logger.addHandler(handler)     # Attach the handler to the logger
-
-        self.logger.info("Creating Zernike instance")
 
     def R_nm(self, n, m, rho):
         """
@@ -136,11 +124,9 @@ class Zernike(object):
             return r
         else:
             for j in range(int((n - m) / 2) + 1):
-                # print(f"J = {j} | n={n}, m={m}, f={(n + m) / 2 - j}")
                 F = int((n + m) / 2 - j)
                 G = int((n - m) / 2 - j)
                 coef = ((-1) ** j * fact(n - j)) / (fact(j) * fact(F) * fact(G))
-                # coef = 1.0
                 r += coef * rho ** (n - 2 * j)
             return r
 
@@ -161,10 +147,10 @@ class Zernike(object):
         n, m = np.abs(n), np.abs(m)
         m_m = (n - m) / 2
         x = 1. - 2 * rho ** 2
-        R = (-1) ** (m_m) * rho ** m * self.Jacobi(x, n=m_m, alfa=m, beta=0)
+        R = (-1) ** (m_m) * rho ** m * self.get_jacobi_polymonial(x, n=m_m, alfa=m, beta=0)
         return R
 
-    def Jacobi(self, x, n, alfa, beta):
+    def get_jacobi_polymonial(self, x, n, alfa, beta):
         """
         Returns the Jacobi polynomial J_{n}^{alfa, beta} (x)
         For the sake of efficiency and numerical stability it relies on a 3-term recurrence formula
@@ -195,59 +181,6 @@ class Zernike(object):
 
             return J2
 
-    def R_nm_ChongKintner(self, n, m, rho):
-        """
-        Computes the Radial Zernike polynomial of order 'n', 'm' R_nm
-        This one uses a similar approach to the one implemented by R_nm_Jacobi.
-
-        This time, the Q-recursive method developed by Chong [1] is used in combination with
-        the modified Kintner's method to implement a direct recurrence on the Zernike R_nm.
-        The method and formulas are described in [2]
-
-        The main differences with respect to R_nm_Jacobi is that this method directly uses
-        the radial Zernike R_nm, and that its recurrence operates along the order 'm' (row-wise)
-        for a fixed 'n'. In contrast, R_nm_Jacobi operates along the order 'n' (column-wise)
-        for a fixed 'm'.
-
-        This method is not as competitive as the Jacobi because it relies on the evaluation of
-        R_{n,n} = rho ^ n   and    R_{n, n-2} = n rho^n - (n - 1) rho^(n-2)
-        which scales badly with 'n'
-        In contrast, Jacobi keeps the order of the polynomial to k = (n - m) / 2 which is much smaller
-
-        References:
-            [1] C.W. Chong, P. Raveendran, R. Mukundan. "A comparative analysis of algorithms for fast computation
-                of Zernike moments. Pattern Recognition 36 (2003) 731-742
-            [2] Sun-Kyoo Hwang, Whoi-Yul Kim "A novel approach to the fast computation of Zernike moments"
-                Pattern Recognition 39 (2006) 2065-2076
-        """
-        n, m = np.abs(n), np.abs(m)
-
-        if m == n:  # Right at the boundary
-            R_nm = rho ** n
-            return R_nm
-
-        if m == (n - 2):    # One before the boundary
-            R_nm = n * rho ** n - (n - 1) * rho ** (n - 2)
-            return R_nm
-
-        else:   # Interior polynomial
-            R_nn_4 = rho ** n # Compute the one at the boundary R_{n, n}
-            R_nn_2 = n * rho ** n - (n - 1) * rho ** (n - 2)    # R_{n, n-2}
-
-            mm = n - 4
-            while mm >= m:  # iterative along m
-                # [NOTE]: this recursion is wrong!
-                H3 = - 4 * (m + 2) * (m + 1) / ((n + m + 2) * (n - m))
-                H2 = H3 * (n + m + 4) * (n - m - 2) / (4*(m + 3)) + (m + 2)
-                H1 = (m + 4)* (m + 3)/2 - (m + 4) * H2 + H3 * (n + m + 6) * (n - m - 4) / 8
-
-                R_nn = H1 * R_nn_4 + (H2 + H3 / rho ** 2) * R_nn_2
-
-                R_nn_4 = R_nn_2
-                R_nn_2 = R_nn
-                mm -= 2
-            return R_nn
-
     def Z_nm(self, n, m, rho, theta, normalize_noll, mode):
         """
         Main function to evaluate a single Zernike polynomial of order 'n', 'm'
@@ -258,17 +191,18 @@ class Zernike(object):
         :param rho: radial coordinate (ideally it should come normalized to 1)
         :param theta: azimuth coordinate
         :param normalize_noll: True {Applies Noll coefficient}, False {Does nothing}
-        :param mode: whether to use 'Standard' (naive Zernike formula),
-                'Jacobi' (Jacobi-based recurrence) or 'ChongKintner' (Zernike-based recurrence)
+        :param mode: whether to use 'Standard' (naive Zernike formula) or 'Jacobi' (Jacobi-based recurrence)
         """
 
+        # [1] - get the Radial polynomial R_nm
         if mode == 'Standard':
             R = self.R_nm(n, m, rho)
-        if mode == 'Jacobi':
+        elif mode == 'Jacobi':
             R = self.R_nm_Jacobi(n, m, rho)
-        if mode == 'ChongKintner':
-            R = self.R_nm_ChongKintner(n, m, rho)
+        else:
+            raise ValueError(f"Unknown mode: [{mode}]. Choose either 'Standard' or 'Jacobi'")
 
+        # [2] - apply azimuth dependency to get Zernike polynomial Z_nm
         if m == 0:
             if n == 0:
                 return np.ones_like(rho)
@@ -281,57 +215,27 @@ class Zernike(object):
         if m < 0:
             norm_coeff = np.sqrt(2) * np.sqrt(n + 1) if normalize_noll else 1.
             return norm_coeff * R * np.sin(np.abs(m) * theta)
+        
+    def create_model_matrix(self, rho, theta, n_zernike, mode='Jacobi', normalize_noll=False):
 
-    def evaluate_series(self, rho, theta, normalize_noll, mode, print_option='Result'):
-        """
-        Iterates over all the index range 'n' & 'm', computing each Zernike polynomial
-        """
+        # Compute the limit radial index 'n' needed to have at least N_zern, and pad zeroes
+        # self.N_zern = coef.shape[0] if n_zernike is None else n_zernike
+        self.N_zern = n_zernike
+        self.n_lim = get_limit_index(self.N_zern)
+        self.N_total = int((self.n_lim + 1) * (self.n_lim + 2) / 2)    # Total amount of Zernikes
 
-        try:
-            n_max = self.n
-        except AttributeError:
-            raise AttributeError('Maximum n index not defined')
-
-        rho_max = np.max(rho)
-        extends = [-rho_max, rho_max, -rho_max, rho_max]
-
+        self.model_matrix_flat = np.empty((rho.shape[0], self.N_total))
+            
         zern_counter = 0
-        Z_series = np.zeros_like(rho)
-        self.times = []  # List to save the times required to compute each Zernike
-        for n in range(n_max + 1):  # Loop over the Zernike index
+        for n in range(self.n_lim + 1):  # Loop over the Zernike index
             for m in np.arange(-n, n + 1, 2):
-                start = tm()
-                Z = self.Z_nm(n, m, rho, theta, normalize_noll, mode)
-                self.times.append((tm() - start))
-
+                zernike_poly = self.Z_nm(n, m, rho, theta, normalize_noll, mode)
                 # Fill the column of the Model matrix H
                 # Important! The model matrix contains all the polynomials of the
                 # series, so one can use it to recompute a new series with different
                 # coefficients, without redoing all the calculation!
-                self.model_matrix_flat[:, zern_counter] = Z
-
-                Z_series += self.coef[zern_counter] * Z
+                self.model_matrix_flat[:, zern_counter] = zernike_poly
                 zern_counter += 1
-
-                if print_option == 'All':
-                    print('n=%d, m=%d' % (n, m))
-                    if m>=0:    # Show only half the Zernikes to save Figures
-                        plt.figure()
-                        plt.imshow(invert_mask(Z, self.mask), extent=extends, cmap='jet')
-                        plt.title("Zernike(%d, %d)" %(n,m))
-                        plt.xlabel('x')
-                        plt.ylabel('y')
-                        plt.colorbar()
-
-        if print_option == 'Result':
-            plt.figure()
-            plt.imshow(invert_mask(Z_series, self.mask), extent=extends, cmap='jet')
-            plt.title("Zernike Series (%d polynomials)" %self.N_zern)
-            plt.xlabel('x')
-            plt.ylabel('y')
-            plt.colorbar()
-
-        return Z_series
     
     def get_zernike(self, coef):
         """
@@ -341,47 +245,21 @@ class Zernike(object):
 
         # [0] See if the model matrix exists
         try:
-            Hf = self.model_matrix_flat
+            _matrix = self.model_matrix_flat
         except AttributeError("Model matrix does not yet exist, please run Zernike.__call__() first"):
             # Throw an error if the model matrix does not exist yet
             pass
 
-        result_flat = np.dot(self.model_matrix_flat[:, :self.N_zern], coef)
+        # [1] See if the coef needs padding
+        if self.N_total > coef.shape[0]:
+            _coef = np.pad(coef, (0, self.N_total - coef.shape[0]), 'constant')  # Pad to match size
+        elif self.N_total == coef.shape[0]:
+            _coef = coef
+        else:
+            raise ValueError(f"Model matrix of shape {self.model_matrix_flat.shape} and coefficient array of size {coef.shape}. Consider recreating the model matrix!")
+
+        result_flat = np.dot(self.model_matrix_flat, _coef)
         result = invert_mask(result_flat, self.mask)
-
-        return result
-
-
-    def __call__(self, coef, rho, theta, normalize_noll=False, mode='Standard', print_option=None):
-
-        self.logger.debug(f"Calculating the Zernike polynomials for a set coefficients of shape N={coef.shape[0]}")
-        
-        # Compute the limit radial index 'n' needed to have at least N_zern, and pad zeroes
-        self.N_zern = coef.shape[0]
-        self.n = get_limit_index(self.N_zern)
-        N_new = int((self.n + 1) * (self.n + 2) / 2)    # Total amount of Zernikes
-        self.logger.debug(f"Going up to Radial Order n={self.n} | Total: {N_new} Zernike polynomials")
-        if N_new > self.N_zern:  # We will compute more than we need
-            self.coef = np.pad(coef, (0, N_new - self.N_zern), 'constant')  # Pad to match size
-            self.logger.debug(f"Zero-padding the rest of the coefficients array")
-        elif N_new == self.N_zern:
-            self.coef = coef
-            self.logger.debug(f"Shape of the coefficients array is the same as total {N_new} of polynomials. No changes")
-
-        # Check whether the Model matrix H was already created
-        # Observations Z(rho, theta) = H(rho, theta) * zern_coef
-        try:
-            H = self.model_matrix_flat
-            self.logger.debug(f"Checking if the model matrix H already exists? YES")
-        except AttributeError:
-            self.model_matrix_flat = np.empty((rho.shape[0], N_new))
-
-        result = self.evaluate_series(rho, theta, normalize_noll, mode, print_option)
-
-        if print_option != 'Silent':
-            print('\n Mode: ' + mode)
-            print('Total time required to evaluate %d Zernike polynomials = %.3f sec' % (N_new, sum(self.times)))
-            print('Average time per polynomials: %.3f ms' % (1e3 * np.average(self.times)))
 
         return result
 
