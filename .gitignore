@@ -1,3 +1,4 @@
+.idea/
 TODO.md
 ZERN.egg-info
 dist/
@@ -5,3 +6,4 @@ dist/
 build/lib
 build/lib/examples/
 build/lib/examples/example_speed.py
+.idea/*.xml
