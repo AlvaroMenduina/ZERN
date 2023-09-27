@@ -7,3 +7,7 @@ build/lib
 build/lib/examples/
 build/lib/examples/example_speed.py
 .idea/*.xml
+.coverage
+
+tests/__pycache__/*
+zern/__pycache__/*

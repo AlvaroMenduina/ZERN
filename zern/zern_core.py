@@ -25,7 +25,8 @@ from time import time as tm
 
 def parity(n):
     """ Returns 0 if n is even and 1 if n is odd """
-    return int((1 + (-1)**(n+1))/2)
+    res = 0 if n % 2 == 0 else 1
+    return res
 
 def invert_mask(x, mask):
     """
@@ -53,17 +54,6 @@ def invert_model_matrix(H, mask):
         new_H[:,:,k] = zern2D
     return new_H
 
-def rescale_phase_map(phase_map, peak=1):
-    """
-    Rescales a given phase map (Zernike expansion) by shifting it to (max - min)/2
-    and limiting its peak_to_valley so that max(new_map) = peak
-    and min(new_map) = - peak
-    """
-    new_origin = (phase_map.max() + phase_map.min())/2
-    zero_mean_map = phase_map - new_origin
-    rescaled_map = (peak) * zero_mean_map / np.max(zero_mean_map)
-    return rescaled_map
-
 def get_limit_index(N):
     """
     Computes the 'n' Zernike index required to generate a
@@ -73,6 +63,9 @@ def get_limit_index(N):
     the Triangular number T(n + 1) defined as:
         T(x) = x (x + 1) / 2
     """
+    if N < 0:
+        raise RuntimeError("'N' should be positive or zero!")
+
     n = int(np.ceil(0.5 * (np.sqrt(1 + 8*N) - 3)))
     return n
 
@@ -227,7 +220,7 @@ class Zernike(object):
         self.model_matrix_flat = np.empty((rho.shape[0], self.N_total))
             
         zern_counter = 0
-        for n in range(self.n_lim + 1):  # Loop over the Zernike index
+        for n in range(self.n_lim):  # Loop over the Zernike index
             for m in np.arange(-n, n + 1, 2):
                 zernike_poly = self.Z_nm(n, m, rho, theta, normalize_noll, mode)
                 # Fill the column of the Model matrix H
@@ -246,9 +239,9 @@ class Zernike(object):
         # [0] See if the model matrix exists
         try:
             _matrix = self.model_matrix_flat
-        except AttributeError("Model matrix does not yet exist, please run Zernike.__call__() first"):
+        except AttributeError:
             # Throw an error if the model matrix does not exist yet
-            pass
+            raise AttributeError("Model matrix does not yet exist, please run Zernike.__call__() first")
 
         # [1] See if the coef needs padding
         if self.N_total > coef.shape[0]:
