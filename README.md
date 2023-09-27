@@ -22,6 +22,7 @@ Download the repo directly from Github by running git clone:
 git clone https://github.com/AlvaroMenduina/ZERN.git <your_local_dir>
 ```
 
+### 2. Install the package with pip
 Move to where you copied the repository files
 ```
 cd <your_local_dir>
