@@ -10,9 +10,33 @@ This package implements several methods to compute Zernike polynomials which can
   4) An extension of the Jacobi method to improve its efficiency
 
 
-# Installation
+## Installation
 
-```python
+To install ZERN, you can follow these simple steps
+
+### 1. Download the files from GitHub
+
+Download the repo directly from Github by running git clone:
+
+```
+git clone https://github.com/AlvaroMenduina/ZERN.git <your_local_dir>
+```
+
+Move to where you copied the repository files
+```
+cd <your_local_dir>
+```
+
+And run 
+
+```
 python setup.py sdist
+
 pip install .
+```
+
+To test whether the installation was successful, you can try to import the module
+```python
+import zern.zern_core as zern
+_test = zern.Zernike(mask=None)
 ```
