@@ -187,3 +187,33 @@ def test_invert_model_matrix(rho, theta, mask, n_zernike, coef, expected):
     class_test.create_model_matrix(rho, theta, n_zernike, normalize_noll=False, mode="Jacobi")
     result = zern.invert_model_matrix(class_test.model_matrix_flat, mask)
     assert result.shape[:2] == mask.shape
+
+inputs = [(r, t, a, 36, "Standard", 1.0),
+          (r, t, a, 36, "Jacobi", 1.0)]
+@pytest.mark.parametrize("rho, theta, mask, n_zernike, mode, expected", inputs)
+def test_rms_noll(rho, theta, mask, n_zernike, mode, expected):
+    """
+    Test that the RMS of the polynomials is 1.0 for the Noll normalizations
+    """
+    normalization = True
+    class_test = zern.Zernike(mask=mask)
+    class_test.create_model_matrix(rho, theta, n_zernike, mode, normalize_noll=normalization)
+    rms = [np.std(class_test.model_matrix_flat[:, k]) for k in range(class_test.N_total)]
+    assert all(np.isclose(rms[1:], expected, atol=1e-2))
+
+inputs = [(r, t, a, 36, "Jacobi", 1.0)]
+@pytest.mark.parametrize("rho, theta, mask, n_zernike, mode, expected", inputs)
+def test_ptv_noll(rho, theta, mask, n_zernike, mode, expected):
+    """
+    Test that the RMS of the polynomials is 1.0 for the Noll normalizations
+    We need to be flexible on the tolerance because of the mask resolution
+    and how sharply the Zernike go up to 1.0 at the edge
+    """
+    normalization = False
+    class_test = zern.Zernike(mask=mask)
+    class_test.create_model_matrix(rho, theta, n_zernike, mode, normalize_noll=normalization)
+    ptv = [0.5*(np.max(class_test.model_matrix_flat[:, k]) - np.min(class_test.model_matrix_flat[:, k])) for k in range(class_test.N_total)]
+    
+    # Remove spherical, which has not 1.0 PV but 3/4
+    ptv.pop(12)
+    assert all(np.isclose(ptv[1:], expected, atol=1e-1))

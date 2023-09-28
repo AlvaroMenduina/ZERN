@@ -220,7 +220,7 @@ class Zernike(object):
         self.model_matrix_flat = np.empty((rho.shape[0], self.N_total))
             
         zern_counter = 0
-        for n in range(self.n_lim):  # Loop over the Zernike index
+        for n in range(self.n_lim + 1):  # Loop over the Zernike index
             for m in np.arange(-n, n + 1, 2):
                 zernike_poly = self.Z_nm(n, m, rho, theta, normalize_noll, mode)
                 # Fill the column of the Model matrix H

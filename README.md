@@ -36,8 +36,31 @@ python setup.py sdist
 pip install .
 ```
 
+### 3. Verifying it all worked
 To test whether the installation was successful, you can try to import the module
 ```python
 import zern.zern_core as zern
 _test = zern.Zernike(mask=None)
+```
+
+## Testing coverage
+
+```bash
+================================ test session starts ================================ 
+platform win32 -- Python 3.11.5, pytest-7.4.2, pluggy-1.3.0
+rootdir: C:\Users\alvaro\Documents\Python Scripts\ZERN
+plugins: anyio-4.0.0
+collected 68 items                                                                                                                                                                                                
+
+tests\test_zern.py ......................................................     [100%] 
+
+================================ 68 passed in 3.54s ===============================
+PS C:\Users\alvaro\Documents\Python Scripts\ZERN> coverage report --show-missing
+Name                 Stmts   Miss  Cover   Missing
+--------------------------------------------------
+tests\test_zern.py     120      0   100%
+zern\__init__.py         0      0   100%
+zern\zern_core.py      116      6    95%   67, 86-88, 117, 262
+--------------------------------------------------
+TOTAL                  236      6    97%
 ```
