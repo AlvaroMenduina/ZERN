@@ -4,5 +4,5 @@ The Zernike polynomials are a set of orthogonal polynomials in the unit circle. 
 Zernike polynomials have both two $n, m$, the first one representing the *radial* order, the second one representing the *azimuth* order.
 
 \begin{equation}
-
+Z_{n,m}(\rho, \theta) = 0
 \end{equation}
