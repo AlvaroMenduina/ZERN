@@ -11,3 +11,5 @@ build/lib/examples/example_speed.py
 
 tests/__pycache__/*
 zern/__pycache__/*
+
+examples/*.py
