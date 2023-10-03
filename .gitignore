@@ -13,3 +13,5 @@ tests/__pycache__/*
 zern/__pycache__/*
 
 examples/*.py
+examples/*.ipynb
+examples/.ipynb_checkpoints
