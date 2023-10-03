@@ -9,4 +9,4 @@ $Z_{n}^{-m}(\rho, \theta) = R_{n}^{m}(\rho) \cdot \sin(m\theta)$
 
 The Zernikes are usually defined with the following formula:
 
-$R_{n}^{m}(\rho) = \sum_{k=0}^{\frac{n-m}{2}} \frac{(-1)^k(n-1)!}{k!(\frac{n+m}{2} - k)!(\frac{n-m}{2} - k)!} \rho^{n-2k}$
+$R_{n}^{m}(\rho) = \sum_{k=0}^{\frac{n-m}{2}}\frac{(-1)^k(n-1)!}{k!(\frac{n+m}{2} - k)!(\frac{n-m}{2} - k)!} \rho^{n-2k}$
