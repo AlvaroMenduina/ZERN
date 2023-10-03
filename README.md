@@ -1,23 +1,16 @@
 # ZERN - Zernike Polynomials in Python
-Python package for the evaluation of Zernike polynomials $Z_{n,m} (\rho, \theta)$.
+Python package for the evaluation of Zernike polynomials $Z_{n,m} (\rho, \theta)$. This package implements several methods to calculate Zernike polynomials. One of the methods takes advantage of the relationship between Jacobi polynomials $J_{k}^{\alpha, \beta}$ and the Zernikes, and uses a recurrence to calculate arbitrary polynomials efficiently and robustly. 
+
+This is an installable package that can be used to simulate wavefront maps as a series of Zernike polynomials of arbitrary radial order. It supports any kind of aperture mask, making it flexible for evaluating Zernikes in any astronomical pupil.
 
 ![Zernike](images/zernike.PNG)
-
-## Description
-This package implements several methods to compute Zernike polynomials which can be summarised as follows:
-
-  1) A naive implementation of the Zernike formulas, used to show the worst case scenario. It scales very poorly with the amount of polynomials being evaluated and their order {n, m}.
-  2) A method developed by Chong which uses direct recurrence of Zernikes to speed up computation.
-  3) A method based on the relationship between Jacobi polynomials $J_{k}^{\alpha, \beta}$ and the Zernike polynomials $Z_{n,m} (\rho, \theta)$. It takes advantage of 3-term recurrence formulas of Jacobi polynomials to speed up the computation. This method more robust in terms of numerical stability than the standard approach, which starts to fail at higher radial order $n$.
-  4) An extension of the Jacobi method to improve its efficiency
-
 
 
 It supports arbitrary aperture masks.
 
 ## Installation
 
-To install ZERN, you can follow these simple steps
+To install ZERN, you can follow these simple steps:
 
 ### 1. Download the files from GitHub
 
@@ -48,7 +41,11 @@ import zern.zern_core as zern
 _test = zern.Zernike(mask=None)
 ```
 
+## Tutorials
+If you are interested in learning how to uze **ZERN**, you can find several Jupyter notebooks [here](/examples/)
+
 ## Testing coverage
+This package has been thoroughly tested to ensure the results are consistent.
 
 ```bash
 ================================ test session starts ================================ 
