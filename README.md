@@ -1,7 +1,7 @@
 # ZERN - Zernike Polynomials in Python
 Python package for the evaluation of Zernike polynomials $Z_{n,m} (\rho, \theta)$.
 
-![Zernike](images/zernike.PNG =550x)
+![Zernike](images/zernike.PNG)
 
 ## Description
 This package implements several methods to compute Zernike polynomials which can be summarised as follows:

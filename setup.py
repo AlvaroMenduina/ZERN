@@ -14,8 +14,8 @@ with open(path.join(here, 'requirements.txt'), 'r') as f:
 
 setup(
     name='ZERN',
-    version='0.9.1',
-    description='Fast computation of Zernike polynomials',
+    version='1.0.0',
+    description='Computing Zernike polynomials with Python',
     long_description=long_description,
     url='https://github.com/AlvaroMenduina/ZERN',
     author_email='alvaro.menduinafernandez@gmailcom',
