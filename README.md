@@ -6,8 +6,6 @@ This is an installable package that can be used to simulate wavefront maps as a 
 ![Zernike](images/zernike.PNG)
 
 
-It supports arbitrary aperture masks.
-
 ## Installation
 
 To install ZERN, you can follow these simple steps:

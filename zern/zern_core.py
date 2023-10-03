@@ -229,6 +229,7 @@ class Zernike(object):
                 # coefficients, without redoing all the calculation!
                 self.model_matrix_flat[:, zern_counter] = zernike_poly
                 zern_counter += 1
+                print(zern_counter)
     
     def get_zernike(self, coef):
         """
